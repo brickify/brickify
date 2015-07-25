@@ -10,8 +10,8 @@ piwikTracking = require '../../client/piwikTracking'
 
 minimalAcceptableFps = 20
 upgradeThresholdFps = 40
-accumulationTime = 200
-timesBelowThreshold = 10
+accumulationFrames = 10
+timesBelowThreshold = 5
 fpsDisplayUpdateTime = 1000
 maxNoPipelineDecisions = 3
 piwikStatInterval = 20
@@ -33,6 +33,7 @@ class FidelityControl
 
 	init: (@bundle) =>
 		@pluginHooks = @bundle.pluginHooks
+		@renderer = @bundle.renderer
 
 		@currentFidelityLevel = 0
 
@@ -40,53 +41,48 @@ class FidelityControl
 		@screenShotMode = false
 
 		@accumulatedFrames = 0
-		@accumulatedTime = 0
+		@accumulatedDelta = 0
+		@timesBelowMinimumFps = 0
 
 		@currentPiwikStat = 0
 
-		@timesBelowMinimumFps = 0
-
-		@showFps = process.env.NODE_ENV is 'development'
-		@_setupFpsDisplay()
+		@showFidelity = process.env.NODE_ENV is 'development'
+		@_setupFidelityDisplay()
 
 		# allow pipeline only if we have the needed extension and a stencil buffer
 		# and if the pipeline is enabled in the global config
 		usePipeline = @bundle.globalConfig.rendering.usePipeline
-		depth = @bundle.renderer.threeRenderer.supportsDepthTextures()
-		fragDepth = @bundle.renderer.threeRenderer.extensions.get 'EXT_frag_depth'
-		stencilBuffer = @bundle.renderer.threeRenderer.hasStencilBuffer
+		depth = @renderer.threeRenderer.supportsDepthTextures()
+		fragDepth = @renderer.threeRenderer.extensions.get 'EXT_frag_depth'
+		stencilBuffer = @renderer.threeRenderer.hasStencilBuffer
 
-		capabilites = ''
-		capabilites += 'DepthTextures ' if depth?
-		capabilites += 'ExtFragDepth ' if fragDepth?
-		capabilites += 'stencilBuffer ' if stencilBuffer
+		capabilities = ''
+		capabilities += 'DepthTextures ' if depth?
+		capabilities += 'ExtFragDepth ' if fragDepth?
+		capabilities += 'stencilBuffer ' if stencilBuffer
 
-		piwikTracking.setCustomSessionVariable 0, 'GpuCapabilities', capabilites
+		piwikTracking.setCustomSessionVariable 0, 'GpuCapabilities', capabilities
 
 		@pipelineAvailable = usePipeline and depth? and fragDepth? and stencilBuffer
 		@noPipelineDecisions = 0
 
-	on3dUpdate: (timestamp) =>
-		if not @_lastTimestamp?
-			@_lastTimestamp = timestamp
-			return
+	on3dUpdate: (time, lastFrameTime) =>
+		# lastFrameTime is not set the very first time
+		return unless lastFrameTime
 
-		delta = timestamp - @_lastTimestamp
-
-		@_lastTimestamp = timestamp
-		@accumulatedTime += delta
+		@accumulatedDelta += lastFrameTime
 		@accumulatedFrames++
 
-		if @accumulatedTime > accumulationTime
-			fps = (@accumulatedFrames / @accumulatedTime) * 1000
+		if @accumulatedFrames > accumulationFrames
+			average = @accumulatedDelta / @accumulatedFrames
+			fps = 1000 / average
+			@accumulatedDelta = 0
 			@accumulatedFrames = 0
-			@accumulatedTime %= accumulationTime
 			@_adjustFidelity fps
-			@_showFps timestamp, fps
 
 			@currentPiwikStat++
 			if @currentPiwikStat > piwikStatInterval
-				@_sendFpsStats(fps)
+				@_sendFpsStats fps
 				@currentPiwikStat = 0
 
 	_sendFpsStats: (fps) =>
@@ -120,7 +116,7 @@ class FidelityControl
 
 	_increaseFidelity: =>
 		# only allow pipeline when we have the extensions needed for it
-		return if @currentFidelityLevel == 2 and not @pipelineAvailable
+		return if @currentFidelityLevel is 2 and not @pipelineAvailable
 
 		# Increase fidelity
 		@currentFidelityLevel++
@@ -136,9 +132,18 @@ class FidelityControl
 			@currentFidelityLevel, FidelityControl.fidelityLevels, {}
 		)
 
-		@bundle.renderer.setFidelity(
+		@renderer.setFidelity(
 			@currentFidelityLevel, FidelityControl.fidelityLevels, {}
 		)
+
+		@_showFidelity()
+		pipelineUltraIndex = FidelityControl.fidelityLevels.indexOf 'PipelineUltra'
+		if @currentFidelityLevel is pipelineUltraIndex
+			@renderer.render()
+			.then @renderer.render
+			.then @renderer.render
+		else
+			@renderer.render()
 
 	getHotkeys: =>
 		return {
@@ -166,20 +171,17 @@ class FidelityControl
 		@autoAdjust = false
 		@_decreaseFidelity() if @currentFidelityLevel > 0
 
-	_setupFpsDisplay: =>
-		return unless @showFps
-		@lastDisplayUpdate = 0
-		@$fpsDisplay = $('<div class="fps-display"></div>')
-		$('body').append @$fpsDisplay
+	_setupFidelityDisplay: =>
+		return unless @showFidelity
+		@$fidelityDisplay = $('<div class="fidelity-display"></div>')
+		$('body').append @$fidelityDisplay
+		@_showFidelity()
 
-	_showFps: (timestamp, fps) =>
-		return unless @showFps
-		if timestamp - @lastDisplayUpdate > fpsDisplayUpdateTime
-			@lastDisplayUpdate = timestamp
-			levelAbbreviation = FidelityControl.fidelityLevels[@currentFidelityLevel]
-				.match(/[A-Z]/g).join('')
-			fpsText = Math.round(fps) + '/' + levelAbbreviation
-			@$fpsDisplay.text fpsText
+	_showFidelity: =>
+		return unless @showFidelity
+		levelAbbreviation = FidelityControl.fidelityLevels[@currentFidelityLevel]
+			.match(/[A-Z]/g).join('')
+		@$fidelityDisplay.text levelAbbreviation
 
 	# disables pipeline for screenshots
 	enableScreenshotMode: =>
@@ -193,7 +195,7 @@ class FidelityControl
 			level, FidelityControl.fidelityLevels
 			screenshotMode: true
 		)
-		@bundle.renderer.setFidelity(
+		@renderer.setFidelity(
 			level, FidelityControl.fidelityLevels
 			screenshotMode: true
 		)
@@ -208,15 +210,9 @@ class FidelityControl
 			@currentFidelityLevel, FidelityControl.fidelityLevels
 			screenshotMode: false
 		)
-		@bundle.renderer.setFidelity(
+		@renderer.setFidelity(
 			@currentFidelityLevel, FidelityControl.fidelityLevels
 			screenshotMode: false
 		)
-
-	reset: =>
-		@accumulatedFrames = 0
-		@accumulatedTime = 0
-		@timesBelowMinimumFps = 0
-		@_lastTimestamp = null
 
 module.exports = FidelityControl

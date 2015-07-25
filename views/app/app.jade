@@ -4,28 +4,28 @@ block styles
 	link(rel='stylesheet', href='/styles/screen.css')
 
 block body
-	#wrapper.container-fluid
-		noscript
-			| For full functionality of this site it is necessary to enable JavaScript.
-			| Here are the
-			= ' '
-			a(href="http://enable-javascript.com", target="_blank")
-				| instructions how to enable JavaScript in your web browser
+	noscript
+		| For full functionality of this site it is necessary to enable JavaScript.
+		| Here are the
+		= ' '
+		a(href="http://enable-javascript.com", target="_blank")
+			| instructions how to enable JavaScript in your web browser
 
+	.canvasWrapper
 		canvas#canvas.appCanvas(touch-action="none")
 
-		#commandContainer.hidden-xs
-			a#cmdHelp.fa.fa-keyboard-o(href="#", title="Open keyboard shortcuts")
+	#commandContainer.hidden-xs
+		a#cmdHelp.fa.fa-keyboard-o(href="#", title="Open keyboard shortcuts")
 
-		aside#leftSidebar.col-xs-12.col-sm-4.col-md-3.col-lg-2
-			include ./sidebar.jade
+	aside#leftSidebar.col-xs-12.col-sm-4.col-md-3.col-lg-2
+		include ./sidebar.jade
 
-		#webGlWarning
-			p You should not see this text! Do you use a webGL ready browser?
-				= ' '
-				a(href='http://get.webgl.org') get.webgl.org
+	#webGlWarning
+		p You should not see this text! Do you use a webGL ready browser?
+			= ' '
+			a(href='http://get.webgl.org') get.webgl.org
 
-		include usageHints
+	include usageHints
 
 	a(target='_blank' href='https://docs.google.com/forms/d/14_gpbiIdyQciLczzW1SGx9inXeuj3eNF9w2cBZzIoC4/viewform?usp=send_form')
 		.corner-ribbon.top-right.blue.shadow.sticky.hidden-xs Give Feedback!

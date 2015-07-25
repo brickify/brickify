@@ -48,10 +48,11 @@ class DummyPlugin
 	# method of all plugins that provide it.
 	#
 	# @param {DOMHighResTimeStamp} timestamp the current time
+	# @param {Number} lastFrameTime milliseconds it took to render the last frame
 	# @see Renderer
 	# @see https://developer.mozilla.org/en-US/docs/Web/API/DOMHighResTimeStamp
 	###
-	on3dUpdate: (timestamp) ->
+	on3dUpdate: (timestamp, lastFrameTime) ->
 		return undefined
 
 	###

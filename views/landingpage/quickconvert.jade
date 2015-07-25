@@ -4,13 +4,15 @@ section.quickConvert
 			.col-lg-5.text-center
 				h3
 					center Original Model
-				canvas#renderArea1.quickConvertCanvas(touch-action="none")
-			.col-lg-2.text-center.convert-arrow
+				.canvasWrapper
+					canvas#renderArea1.quickConvertCanvas(touch-action="none")
+			.col-lg-2.text-center.convert-arrow.hidden-xs.hidden-md.hidden-sm
 				img.img-responsive(src='/img/convertArrow.png')
 			.col-lg-5.text-center
 				h3
 					center With LEGO#[sup &reg;] bricks
-				canvas#renderArea2.quickConvertCanvas(touch-action="none")
+				.canvasWrapper
+					canvas#renderArea2.quickConvertCanvas(touch-action="none")
 				#applinks
 					a.btn.btn-success#downloadButton Download
 					= ' '

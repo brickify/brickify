@@ -14,6 +14,8 @@ class BrickVisualization
 	constructor: (@bundle,  @brickThreeNode, @brickShadowThreeNode,
 								@defaultColoring, @fidelity) ->
 
+		@renderer = @bundle.renderer
+
 		@csgSubnode = new THREE.Object3D()
 		@brickThreeNode.add @csgSubnode
 
@@ -56,15 +58,19 @@ class BrickVisualization
 			@csgSubnode.add csgMesh
 
 		@csgSubnode.visible = true
+		@_render()
 
 	hideCsg: =>
 		@csgSubnode.visible = false
+		@_render()
 
 	hideVoxelAndBricks: =>
 		@bricksSubnode.visible = false
+		@_render()
 
 	showVoxelAndBricks: =>
 		@bricksSubnode.visible  = true
+		@_render()
 
 	# Updates brick and voxel visualization
 	updateVisualization: (coloring = @defaultColoring, recreate = false) =>
@@ -149,6 +155,8 @@ class BrickVisualization
 
 		@unhighlightBigBrush()
 
+		@_render()
+
 		# Show not filled lego shape as outline
 		outlineCoords = @printVoxels.map (voxel) -> voxel.position
 		@voxelWireframe.createWireframe outlineCoords
@@ -209,7 +217,7 @@ class BrickVisualization
 			for visibleBrick in threeLayer.children
 				@_setStudVisibility visibleBrick.brick
 
-		return
+		@_render()
 
 	_makeLayerGrayscale: (layer) ->
 		for threeBrick in layer.children
@@ -258,15 +266,19 @@ class BrickVisualization
 		if voxel?
 			@_highlightVoxel.visible = true and @_highlightVoxelVisibility
 			worldPos = @grid.mapVoxelToWorld voxel.position
+			return voxel if @_highlightVoxel.position.equals worldPos
 			@_highlightVoxel.position.set(
 				worldPos.x, worldPos.y, worldPos.z
 			)
 			@_highlightVoxel.setMaterial hVoxel
 			@_highlightBigBrush voxel, hBox if bigBrush
 		else
+			return unless @_highlightVoxel.visible
 			# Clear highlight if no voxel is below mouse
 			@_highlightVoxel.visible = false
 			@unhighlightBigBrush()
+
+		@_render()
 
 		return voxel
 
@@ -333,6 +345,7 @@ class BrickVisualization
 					temporaryVoxel.visible = false
 					break
 
+		@_render()
 		return voxels
 
 	###
@@ -373,6 +386,7 @@ class BrickVisualization
 			)
 			temporaryVoxel.voxelPosition = voxel.position
 			@temporaryVoxels.add temporaryVoxel
+		@_render()
 		return voxels
 
 	###
@@ -407,5 +421,8 @@ class BrickVisualization
 		for layer in @bricksSubnode.children
 			for threeBrick in layer.children
 				threeBrick.setFidelity @fidelity
+
+	_render: =>
+		@renderer.render()
 
 module.exports = BrickVisualization

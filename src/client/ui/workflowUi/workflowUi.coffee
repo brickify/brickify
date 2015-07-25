@@ -4,6 +4,7 @@ LoadUi = require './LoadUi'
 EditUi = require './EditUi'
 PreviewUi = require './PreviewUi'
 ExportUi = require './ExportUi'
+fullscreen = require 'fullscreen'
 
 class WorkflowUi
 	constructor: (@bundle) -> return
@@ -46,6 +47,7 @@ class WorkflowUi
 
 		@_initScrollbar()
 		@_initToggleButton()
+		@_initFullscreenButton()
 
 	_initScrollbar: ->
 		sidebar = document.getElementById 'leftSidebar'
@@ -55,11 +57,23 @@ class WorkflowUi
 	_initToggleButton: ->
 		$('#toggleMenu').click => @toggleMenu()
 
+	_initFullscreenButton: ->
+		if fullscreen.available()
+			$('#fullScreen').click => @toggleFullScreen()
+			$('#fullScreen').show()
+
 	toggleMenu: ->
 		$('#leftSidebar').css('height': 'auto')
 		$('#sidebar-content').slideToggle null, ->
 			$('#leftSidebar').toggleClass 'collapsed-sidebar'
 			$('#leftSidebar').css('height': '')
+
+	toggleFullScreen: =>
+		fs = fullscreen(document.documentElement)
+		if fs.target()?
+			fs.release()
+		else
+			fs.request()
 
 	hideMenuIfPossible: ->
 		return unless $('#toggleMenu:visible').length > 0

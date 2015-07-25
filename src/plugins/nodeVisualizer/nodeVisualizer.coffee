@@ -19,6 +19,8 @@ class NodeVisualizer
 		@fidelity = 0
 
 	init: (@bundle) =>
+		@renderer = @bundle.renderer
+
 		@coloring = new Coloring(@bundle.globalConfig)
 
 		@objectColorMult = new THREE.Vector3(
@@ -238,15 +240,18 @@ class NodeVisualizer
 		@_getCachedData(node)
 		.then (cachedData) =>
 			cachedData.modelVisualization.createVisualization()
-			cachedData.modelVisualization.afterCreation().then =>
+			cachedData.modelVisualization.afterCreation()
+			.then =>
 				solid = cachedData.modelVisualization.getSolid()
 				@_zoomToNode solid if solid?
+			.then @_render
 
 	onNodeRemove: (node) =>
 		@brickRootNode.remove threeHelper.find node, @brickRootNode
 		@brickShadowRootNode.remove threeHelper.find node, @brickShadowRootNode
 		@objectsRootNode.remove threeHelper.find node, @objectsRootNode
 		delete @brickVisualizations[node.id]
+		@_render()
 
 	onNodeSelect: (@selectedNode) => return
 
@@ -465,5 +470,8 @@ class NodeVisualizer
 		return @_getCachedData(node)
 		.then (cachedData) ->
 			return cachedData.brickThreeNode
+
+	_render: =>
+		@renderer.render()
 
 module.exports = NodeVisualizer

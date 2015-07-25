@@ -12,9 +12,6 @@ fileLoader = require './modelLoading/fileLoader'
 modelCache = require './modelLoading/modelCache'
 
 # Set renderer size to fit to 3 bootstrap columns
-globalConfig.staticRendererSize = true
-globalConfig.staticRendererWidth = 388
-globalConfig.staticRendererHeight = 300
 globalConfig.buildUi = false
 globalConfig.plugins.dummy = false
 globalConfig.plugins.undo = false

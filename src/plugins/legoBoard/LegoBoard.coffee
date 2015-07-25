@@ -31,6 +31,8 @@ module.exports = class LegoBoard
 		@_initbaseplateBox()
 		@_initStudGeometries()
 
+		@_updateFidelitySettings()
+
 		# create scene for pipeline
 		@pipelineScene = @bundle.renderer.getDefaultScene()
 
@@ -89,7 +91,11 @@ module.exports = class LegoBoard
 		return container
 
 	_initMaterials: =>
-		studTexture = THREE.ImageUtils.loadTexture('img/baseplateStud.png')
+		studTexture = THREE.ImageUtils.loadTexture(
+			'img/baseplateStud.png'
+			undefined
+			@bundle.renderer.render
+		)
 		studTexture.wrapS = THREE.RepeatWrapping
 		studTexture.wrapT = THREE.RepeatWrapping
 		studTexture.repeat.set dimension / 8, dimension / 8

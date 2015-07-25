@@ -21,6 +21,10 @@ class Renderer
 		@useBigRendertargets = false
 		@usePipelineSsao = false
 		@imageRenderQueries = []
+		window.addEventListener(
+			'resize'
+			@windowResizeHandler
+		)
 
 	# renders the current scene to an image, uses the camera if provided
 	# returns a promise which will resolve with the image
@@ -34,14 +38,18 @@ class Renderer
 			}
 
 	localRenderer: (timestamp) =>
+		startTime = window.performance.now()
+		# Call update hook
+		@pluginHooks.on3dUpdate timestamp, @lastFrameTime
+
 		if @imageRenderQueries.length == 0
 			@_renderFrame timestamp, @camera, null
 		else
 			@_renderImage timestamp
 
-		# call update hook
-		@pluginHooks.on3dUpdate timestamp
-		@animationRequestID = requestAnimationFrame @localRenderer
+		@renderPromiseResolver()
+		@renderPromise = null
+		@lastFrameTime = window.performance.now() - startTime
 
 	# Renders all plugins
 	_renderFrame: (timestamp, camera, renderTarget = null) =>
@@ -234,13 +242,13 @@ class Renderer
 	getCamera: ->
 		return @camera
 
-	windowResizeHandler: ->
-		if not @staticRendererSize
-			@camera.aspect = @size().width / @size().height
-			@camera.updateProjectionMatrix()
-			@threeRenderer.setSize @size().width, @size().height
+	windowResizeHandler: =>
+		@camera.aspect = @size().width / @size().height
+		@camera.updateProjectionMatrix()
+		@threeRenderer.setSize @size().width, @size().height
 
 		@threeRenderer.render @scene, @camera
+		@render()
 
 	zoomToNode: (threeNode) ->
 		boundingSphere = threeHelper.getBoundingSphere threeNode
@@ -254,21 +262,14 @@ class Renderer
 		@_setupCamera @globalConfig
 		@_setupControls @globalConfig, controls
 
-		@animationRequestID = requestAnimationFrame @localRenderer
-
 	_setupSize: (globalConfig) ->
-		if not globalConfig.staticRendererSize
-			@staticRendererSize = false
-		else
-			@staticRendererSize = true
-			@staticRendererWidth = globalConfig.staticRendererWidth
-			@staticRendererHeight = globalConfig.staticRendererHeight
+		@$canvasWrapper = $ '.canvasWrapper'
 
 	size: ->
-		if @staticRendererSize
-			return {width: @staticRendererWidth, height: @staticRendererHeight}
-		else
-			return {width: window.innerWidth, height: window.innerHeight}
+		return {
+			width: @$canvasWrapper.width()
+			height: @$canvasWrapper.height()
+		}
 
 	_setupRenderer: (globalConfig) ->
 		@threeRenderer = new THREE.WebGLRenderer(
@@ -322,6 +323,8 @@ class Renderer
 		)
 		@camera.up.set(0, 0, 1)
 		@camera.lookAt(new THREE.Vector3(0, 0, 0))
+		Object.observe @camera.position, =>
+			@render()
 
 	_setupControls: (globalConfig, controls) ->
 		unless controls
@@ -357,14 +360,10 @@ class Renderer
 		@_setupLighting(scene)
 		return scene
 
-	toggleRendering: =>
-		if @animationRequestID?
-			cancelAnimationFrame @animationRequestID
-			@animationRequestID = null
-			@controls.config.enabled = false
-		else
-			@animationRequestID = requestAnimationFrame @localRenderer
-			@controls.config.enabled = true
-
+	render: =>
+		if not @renderPromise?
+			@renderPromise = new Promise (@renderPromiseResolver) =>
+				requestAnimationFrame @localRenderer
+		return @renderPromise
 
 module.exports = Renderer

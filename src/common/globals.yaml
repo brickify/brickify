@@ -45,9 +45,6 @@ gridStepSize: 10
 
 # render DOM
 renderAreaId: 'canvas'
-staticRendererSize: false
-staticRendererWidth: 100
-staticRendererHeight: 100
 
 #ui and interaction
 buildUi: true

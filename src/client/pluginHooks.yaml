@@ -30,10 +30,13 @@
 # On each render frame the [renderer](render.html) will call the `on3dUpdate`
 # method of all plugins that provide it.
 #
-# The callback has one single argument, a DOMHighResTimeStamp, which indicates
+# The callback has two arguments:
+# First, a DOMHighResTimeStamp which indicates
 # the current time for when requestAnimationFrame starts to fire callbacks.
 # (according to
 # https://developer.mozilla.org/en/docs/Web/API/window.requestAnimationFrame)
+# Second, a number in milliseconds indicating the time it took to render the
+# last frame.
 
 - on3dUpdate
 

@@ -41,9 +41,15 @@ class PointerDispatcher
 		# Stop event if a plugin handled it (else let pointer controls work)
 		@_stop event if handled
 
+		# This was a down event not handled by any plugin --> the whole gesture will
+		# be handled by pointer controls
+		@_isPointerControlsGesture = !handled
+
 		return
 
 	onPointerMove: (event) =>
+		return if @_isPointerControlsGesture
+
 		# don't call mouse events if there is no selected node
 		if not @sceneManager.selectedNode?
 			# notify hint Ui of unhandled event
@@ -62,6 +68,11 @@ class PointerDispatcher
 		return
 
 	onPointerUp: (event) =>
+		if @_isPointerControlsGesture
+			# End this gesture.
+			@_isPointerControlsGesture = false
+			return
+
 		# Pointer capture will be implicitly released
 
 		# don't call mouse events if there is no selected node
