@@ -47,15 +47,20 @@ module.exports = class Coloring
 			opacity: 0.4
 			depthFunc: THREE.GreaterDepth
 		)
+		@objectShadowMat.depthWrite = false
+
 		@_setPolygonOffset @objectShadowMat, +3, +3
 
 		lineMaterialGenerator = new LineMatGenerator()
 		@objectLineMat = lineMaterialGenerator.generate 0x000000
 		@objectLineMat.linewidth = 2
-		@objectLineMat.transparent = true
-		@objectLineMat.opacity = 0.1
-		@objectLineMat.depthFunc = THREE.GreaterDepth
+		@objectLineMat.depthFunc = THREE.AlwaysDepth
 		@objectLineMat.depthWrite = false
+
+		@objectLineMatFront = lineMaterialGenerator.generate 0x000000
+		@objectLineMatFront.linewidth = 2
+		@objectLineMatFront.depthFunc = THREE.LessEqualDepth
+		@objectLineMatFront.depthWrite = true
 
 		@_createBrickMaterials()
 

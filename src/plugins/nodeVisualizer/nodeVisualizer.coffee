@@ -16,6 +16,7 @@ class NodeVisualizer
 	constructor: ->
 		# rendering properties
 		@brickVisualizations = {}
+		@modelVisualizations = {}
 		@fidelity = 0
 
 	init: (@bundle) =>
@@ -212,6 +213,11 @@ class NodeVisualizer
 		for nodeId, brickVisualization of @brickVisualizations
 			brickVisualization.setFidelity @fidelity
 
+		# Turn off second wireframe pass when pipeline is rendered
+		for nodeId, modelVisualization of @modelVisualizations
+			lines = modelVisualization.getSolidLines()
+			lines.visible = not @usePipeline
+
 	# called by newBrickator when an object's data structure is modified
 	objectModified: (node, newBrickatorData) =>
 		@_getCachedData(node)
@@ -292,6 +298,11 @@ class NodeVisualizer
 			)
 		@brickVisualizations[node.id] = brickVisualization
 
+		modelVisualization = new ModelVisualization(
+			@bundle.globalConfig, node, modelThreeNode, @coloring
+		)
+		@modelVisualizations[node.id] = modelVisualization
+
 		data = {
 			initialized: false
 			node: node
@@ -299,9 +310,7 @@ class NodeVisualizer
 			brickShadowThreeNode: brickShadowThreeNode
 			modelThreeNode: modelThreeNode
 			brickVisualization: brickVisualization
-			modelVisualization: new ModelVisualization(
-				@bundle.globalConfig, node, modelThreeNode, @coloring
-			)
+			modelVisualization: modelVisualization
 		}
 
 		return data
