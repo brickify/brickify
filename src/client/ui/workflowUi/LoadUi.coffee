@@ -1,5 +1,5 @@
 fileDropper = require '../../modelLoading/fileDropper'
-fileLoader = require '../../modelLoading/fileLoader'
+readFiles = require '../../modelLoading/readFiles'
 piwikTracking = require '../../piwikTracking'
 
 class LoadUi
@@ -14,25 +14,27 @@ class LoadUi
 		fileDropper.init @fileLoadHandler
 
 		$('#fileInput').on 'change', (event) =>
-			@fileLoadHandler(event).then =>
-				$('#fileInput').val('')
-				@workflowUi.hideMenuIfPossible()
+			@fileLoadHandler(event.target.files)
+				.then =>
+					$('#fileInput').val('')
+					@workflowUi.hideMenuIfPossible()
 
-	fileLoadHandler: (event) =>
-		files = event.target.files ? event.dataTransfer.files
-		@_checkReplaceModel().then (loadConfirmed) =>
-			return unless loadConfirmed
-			piwikTracking.trackEvent 'Editor', 'LoadModel', files[0].name
-			spinnerOptions =
-				length: 5
-				radius: 3
-				width: 2
-				shadow: false
-			fileLoader.onLoadFile(
-				files
-				document.getElementById 'loadButtonFeedback'
-				spinnerOptions
-			).then @workflowUi.bundle.modelLoader.loadByIdentifier
+	fileLoadHandler: (files) =>
+		return unless files.length
+
+		@_checkReplaceModel()
+			.then (loadConfirmed) ->
+				return unless loadConfirmed
+
+				piwikTracking.trackEvent(
+					'Editor'
+					'LoadModel'
+					files[0].name
+				)
+
+				return readFiles files
+
+			.then @workflowUi.bundle.modelLoader.loadByIdentifier
 
 	_checkReplaceModel: =>
 		question = 'You already have a model in your scene.

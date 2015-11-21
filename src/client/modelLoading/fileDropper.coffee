@@ -21,7 +21,7 @@ addOverlay = (target) ->
 bindDropHandler = (target, overlay, callback) ->
 	target.addEventListener 'drop', (event) ->
 		hideOverlay overlay
-		callback event
+		callback event.dataTransfer.files
 		stopEvent event
 	target.addEventListener 'dragover', (event) ->
 		stopEvent event

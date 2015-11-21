@@ -1,8 +1,8 @@
 #loadGroup
 	label.btn.btn-success.btn-block#loadButton(for='fileInput')
-		| LOAD
-		br
-		span#loadButtonFeedback drop an stl file
+		div#progressBar
+		span#loadingStatus Drop an STL file
+
 	input#fileInput(type='file' accept='.stl' style='display: none')
 
 	br
