@@ -36,6 +36,7 @@
     "filesaver.js": "^0.1.1",
     "font-awesome": "^4.3.0",
     "fs-promise": "^0.3.1",
+    "image-map-resizer": "brickify/image-map-resizer#dev",
     "jade": "^1.10.0",
     "jquery": "^2.1.1",
     "js-yaml": "^3.2.7",

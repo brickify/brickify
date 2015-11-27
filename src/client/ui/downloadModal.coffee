@@ -1,3 +1,5 @@
+require 'image-map-resizer'
+
 wizardLogicInitialized = false
 currentWizardStep = 0
 wizardSteps = [
@@ -17,8 +19,15 @@ $testStripContent = undefined
 $wizardButtons = undefined
 $wizardHoleSizeSelect = undefined
 $wizardStudSizeSelect = undefined
+$wizardStudImage = undefined
+$wizardHoleImage = undefined
+$wizardTextOverlayStud = undefined
+$wizardTextOverlayHole = undefined
 $studSizeSelect = undefined
 $holeSizeSelect = undefined
+$wizardStepObjects = undefined
+$textMap = undefined
+$numberMap = undefined
 
 alphabeticalList = (i, range) ->
 	# A = 65
@@ -43,6 +52,10 @@ disableWizard = ->
 	$legoContent.fadeIn wizardFadeTime
 	$stlContent.fadeIn wizardFadeTime
 	$wizardButtons.fadeOut wizardFadeTime
+
+	for $step in $wizardStepObjects
+		$step.fadeOut wizardFadeTime
+
 	currentWizardStep = 0
 
 # Initializes the logic for the test strip wizard
@@ -59,6 +72,9 @@ initializeWizard = ($modal) ->
 	$wizardButtons.hide()
 
 	$startWizard = $modal.find('#startWizard')
+
+	# init imagemaps
+	initializeImageMaps $modal
 
 	$wizardStepObjects = wizardSteps.map (selector) ->
 		$wizardStep = $modal.find(selector)
@@ -90,7 +106,11 @@ initializeWizard = ($modal) ->
 			disableWizard()
 		else
 			$wizardStepObjects[currentWizardStep]
-			.fadeIn wizardFadeTime
+			.fadeIn wizardFadeTime, ->
+				# Trigger image map resize after images are loaded
+				# and shown, since image size is not set accurately
+				# before
+				updateImageMapSize()
 
 		# Update calibration preview on last step
 		if currentWizardStep is wizardSteps.length - 1
@@ -129,6 +149,28 @@ initializeWizard = ($modal) ->
 			applyCurrentWizardStep()
 			updateButtonCaptions()
 
+	setHoleImageToSelectValue = ->
+		id = $wizardHoleSizeSelect.find('option:selected').html()
+		$wizardHoleImage.attr 'src', "img/testStripWizard/holes/#{id}.png"
+
+	setStudImageToSelectValue = ->
+		id = $wizardStudSizeSelect.find('option:selected').html()
+		$wizardStudImage.attr 'src', "img/testStripWizard/studs/#{id}.png"
+
+	# Update image on selection change
+	$wizardHoleSizeSelect.on 'change', ->
+		setHoleImageToSelectValue()
+
+	$wizardStudSizeSelect.on 'change', ->
+		setStudImageToSelectValue()
+
+	# Reset image when leaving the selection area
+	$wizardTextOverlayHole.mouseleave ->
+		setHoleImageToSelectValue()
+
+	$wizardTextOverlayStud.mouseleave ->
+		setStudImageToSelectValue()
+
 	# Fade out size select, start wizard on click
 	$startWizard.click ->
 		currentWizardStep = 0
@@ -138,6 +180,45 @@ initializeWizard = ($modal) ->
 		$sizeSelect.fadeOut wizardFadeTime, ->
 			$wizardStepObjects[0].fadeIn wizardFadeTime
 			$wizardButtons.fadeIn wizardFadeTime
+
+initializeImageMaps = ($modal) ->
+	$wizardStudImage = $modal.find '#wizardStudImage'
+	$wizardHoleImage = $modal.find '#wizardHoleImage'
+	$wizardTextOverlayHole = $modal.find '#wizardTextOverlayHole'
+	$wizardTextOverlayStud = $modal.find '#wizardTextOverlayStud'
+
+	$textMap = $modal.find('#textMap')
+	$textMap.imageMapResize()
+	$numberMap = $modal.find('#numberMap')
+	$numberMap.imageMapResize()
+
+	$textMap.find('area').each ->
+		thisArea  = $(@)
+		id = thisArea.attr 'id'
+		thisArea.hover ->
+			$wizardStudImage.attr 'src', "img/testStripWizard/studs/#{id}.png"
+		thisArea.click ->
+			$wizardStudImage.attr 'src', "img/testStripWizard/studs/#{id}.png"
+			$wizardStudSizeSelect
+			.find('option')
+			.filter -> return $(@).html() is id
+			.attr('selected', true)
+
+	$numberMap.find('area').each ->
+		thisArea  = $(@)
+		id = thisArea.attr 'id'
+		thisArea.hover ->
+			$wizardHoleImage.attr 'src', "img/testStripWizard/holes/#{id}.png"
+		thisArea.click ->
+			$wizardHoleImage.attr 'src', "img/testStripWizard/holes/#{id}.png"
+			$wizardHoleSizeSelect
+			.find('option')
+			.filter -> return $(@).html() is id
+			.attr('selected', true)
+
+updateImageMapSize = ->
+	$textMap.imageMapResize()
+	$numberMap.imageMapResize()
 
 getModal = ({testStrip, stl, lego, steps} = {}) ->
 	$modal ?= $('#downloadModal')

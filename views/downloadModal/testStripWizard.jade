@@ -1,16 +1,16 @@
 h4.disabled Download stl for 3d printer
 #sizeSelect
 	p.
-		Please enter your printer type:
+		Use our wizard to determine the correct calibration settings for your 3D-printer:
+	button.btn.btn-primary.btn-block#startWizard Start wizard
+	br
+	p.
+		If you already know, enter them here before downloading:
 	.row
 		.col-sm-6
 			select.form-control#studSizeSelect
 		.col-sm-6
 			select.form-control#holeSizeSelect
-	br
-	p.
-		If you don't know your printer's type, use our wizard to find it out:
-	button.btn.btn-primary.btn-block#startWizard Start wizard
 	br
 #wizardStepIntro
 	p.
@@ -22,14 +22,43 @@ h4.disabled Download stl for 3d printer
 #wizardStepStuds
 	p.
 		Try to connect the test strip studs into a LEGO-brick. Which size fits best?
-	img(src='img/testStripWizard-studSize.png')
+	.selectContainer
+		map(name='textMap' id='textMap')
+			area( shape="poly" coords="476, 328, 583, 151, 388, 109, 391, 303" id="I" )
+			area( shape="poly" coords="517, 390, 706, 337, 591, 170, 479, 341" id="H" )
+			area( shape="poly" coords="523, 397, 511, 469, 710, 552, 713, 351" id="G" )
+			area( shape="poly" coords="445, 529, 520, 708, 706, 565, 507, 481" id="F" )
+			area( shape="poly" coords="340, 537, 274, 691, 478, 695, 437, 533" id="E" )
+			area( shape="poly" coords="270, 480, 79, 577, 254, 696, 335, 531" id="D" )
+			area( shape="poly" coords="256, 398, 264, 472, 72, 563, 48, 365" id="C" )
+			area( shape="poly" coords="304, 329, 263, 386, 48, 357, 179, 199" id="B" )
+			area( shape="poly" coords="310, 324, 385, 302, 378, 109, 186, 192" id="A" )
+
+		img(src='img/testStripWizard/studs/textOverlay.png' usemap='#textMap' id='wizardTextOverlayStud')
+		img(src='img/testStripWizard/studs/E.png' usemap='#textMap' id='wizardStudImage' onmouseleave="alert('leave2');")
+
 	p.wizardSelect This size fits best:
 		select.form-control#wizardStudSizeSelect
+
 #wizardStepHoles
 	p.
 		Now connect the LEGO-brick studs into the test strip. Which size fits best?
-	img(src='img/testStripWizard-holeSize.png')
-	p.wizardSelect This size fits best:
+	.selectContainer
+		map(name='numberMap' id='numberMap')
+			area( shape="poly" coords="529, 370, 518, 447, 696, 524, 705, 331" id="6" )
+			area( shape="poly" coords="396, 270, 472, 294, 581, 146, 388, 104" id="8" )
+			area( shape="poly" coords="478, 300, 533, 363, 707, 325, 588, 154" id="7" )
+			area( shape="poly" coords="444, 506, 521, 719, 687, 527, 510, 454" id="5" )
+			area( shape="poly" coords="332, 508, 440, 512, 515, 721, 260, 704" id="4" )
+			area( shape="poly" coords="258, 448, 329, 508, 251, 704, 72, 537" id="3" )
+			area( shape="poly" coords="247, 365, 255, 444, 73, 532, 69, 335" id="2" )
+			area( shape="poly" coords="300, 296, 252, 358, 76, 329, 202, 174" id="1" )
+			area( shape="poly" coords="303, 290, 386, 272, 373, 101, 205, 164" id="0" )
+
+		img(src='img/testStripWizard/holes/numberOverlay.png' usemap='#numberMap' id='wizardTextOverlayHole')
+		img(src='img/testStripWizard/holes/5.png' usemap='#numberMap' id='wizardHoleImage')
+
+	p.wizardSelect.clear This size fits best:
 		select.form-control#wizardHoleSizeSelect
 #wizardStepFinished
 	p.
