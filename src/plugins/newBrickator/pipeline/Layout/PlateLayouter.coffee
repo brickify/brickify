@@ -4,6 +4,7 @@ Brick = require '../Brick'
 Voxel = require '../Voxel'
 Random = require '../Random'
 Layouter = require './Layouter'
+DataHelper = require '../DataHelper'
 
 
 ###
@@ -62,57 +63,76 @@ class PlateLayouter extends Layouter
 	# @param {Number} dir the merge direction as specified in Brick.direction
 	# @param {Function} widthFn the function to determine the brick's width
 	# @param {Function} lengthFn the function to determine the brick's length
-	# @return {Array<Brick>} Bricks in the merge direction if this brick can merge
+	# @return {Set<Brick>} Bricks in the merge direction if this brick can merge
 	# in this dir undefined otherwise.
 	# @see Brick
 	###
 	_findMergeableNeighborsInDirection: (brick, dir, widthFn, lengthFn) ->
-		neighborsInDirection = brick.getNeighbors(dir)
-		return null if neighborsInDirection.size is 0
-
-		# Check that the neighbors together don't exceed this brick's width
-		width = 0
-		noMerge = false
-
-		neighborsInDirection.forEach (neighbor) ->
-			neighborSize = neighbor.getSize()
-			if neighborSize.z != brick.getSize().z
-				noMerge = true
-			if neighbor.getPosition().z != brick.getPosition().z
-				noMerge = true
-			width += widthFn neighborSize
-		return null if noMerge
-
-		# If they have the same accumulative width
-		# check if they are in the correct positions,
-		# i.e. no spacing between neighbors
-		return null if width != widthFn(brick.getSize())
-
-		minWidth = widthFn(brick.getPosition())
-
-		maxWidth = minWidth + widthFn(brick.getSize()) - 1
-
-		length = null
-
-		invalidSize = false
-		neighborsInDirection.forEach (neighbor) ->
-			length ?= lengthFn(neighbor.getSize())
-			if widthFn(neighbor.getPosition()) < minWidth
-				invalidSize = true
-			neighborWidth = widthFn(neighbor.getPosition()) +
-				widthFn(neighbor.getSize()) - 1
-			if neighborWidth > maxWidth
-				invalidSize = true
-			if lengthFn(neighbor.getSize()) != length
-				invalidSize = true
-		return null if invalidSize
-
-		if Brick.isValidSize(widthFn(brick.getSize()), lengthFn(brick.getSize()) +
-				length, brick.getSize().z)
-			return neighborsInDirection
-		else
+		if widthFn(brick.getSize()) > 2 and lengthFn(brick.getSize()) >= 2
 			return null
 
+		neighbors = brick.getNeighbors(dir)
+		return null if neighbors.size is 0
+
+		# Check all requirements for mergeability except validSize
+		neighborLength = @_checkNeighbors brick, neighbors, widthFn, lengthFn
+		return null if neighborLength is false
+
+		if Brick.isValidSize(widthFn(brick.getSize()), lengthFn(brick.getSize()) +
+				neighborLength, brick.getSize().z)
+			return neighbors
+
+		# If the neighbors are mergeable, except for unvalid brick dimensions,
+		# test the neighbors' neighbors
+		firstNeighborsLength = neighborLength
+
+		neighborsNeighbors = new Set()
+		neighbors.forEach (neighbor) ->
+			neighbor.getNeighbors(dir).forEach (nNeighbor) ->
+				neighborsNeighbors.add nNeighbor
+
+		# Check the neighbors of the neighbors
+		neighborLength = @_checkNeighbors brick, neighborsNeighbors, widthFn, lengthFn
+		return null if neighborLength is false
+
+		if Brick.isValidSize(widthFn(brick.getSize()), lengthFn(brick.getSize()) +
+				firstNeighborsLength + neighborLength, brick.getSize().z)
+			return DataHelper.union([neighbors, neighborsNeighbors])
+
+		return null
+
+	# Checks all requirements for neighbor mergeability except valid bricksize
+	# returns the length the neighbors would add to the current brick if merged
+	_checkNeighbors: (brick, neighbors, widthFn, lengthFn) =>
+		# Get the bricks minimal and maximal position in its width dimension
+		minWPos = widthFn(brick.getPosition())
+		maxWPos = minWPos + widthFn(brick.getSize()) - 1
+
+		totalNeighborWidth = 0
+		individualNeighborLength = null
+
+		neighborIter = neighbors.values()
+		while neighbor = neighborIter.next().value
+			neighborSize = neighbor.getSize()
+			neighborPos = neighbor.getPosition()
+			# checks for z dimension
+			return false unless neighborSize.z is brick.getSize().z
+			return false unless neighborPos.z is brick.getPosition().z
+			# checks for position (width dimension)
+			# i.e. there cannot be spacing between the neighbors
+			return false if widthFn(neighborPos) < minWPos
+			neighborMaxWPos = widthFn(neighborPos) + widthFn(neighborSize) - 1
+			return false if neighborMaxWPos > maxWPos
+			# check if all neighbors have same length
+			individualNeighborLength ?= lengthFn(neighborSize)
+			return false unless lengthFn(neighborSize) is individualNeighborLength
+			# accumulate all neighbors' width
+			totalNeighborWidth += widthFn(neighborSize)
+
+		# Check that the neighbors combined match the brick's width
+		return false unless totalNeighborWidth is widthFn(brick.getSize())
+
+		return individualNeighborLength
 
 
 	# Returns the index of the mergeableNeighbors sub-set-in-this-array,
