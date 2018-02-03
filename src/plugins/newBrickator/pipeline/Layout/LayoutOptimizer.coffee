@@ -2,8 +2,9 @@ log = require 'loglevel'
 
 Brick = require '../Brick'
 Voxel = require '../Voxel'
-DataHelper = require '../DataHelper'
 Random = require '../Random'
+ConComp = require './ConnectedComponents'
+AP = require './ArticulationPoints'
 
 
 class LayoutOptimizer
@@ -13,79 +14,49 @@ class LayoutOptimizer
 
 	optimizeLayoutStability: (grid) =>
 		maxNumPasses = 15
+		articulationPoints = new Set()
 
 		for pass in [0...maxNumPasses]
 			bricks = grid.getAllBricks()
-			log.debug '\t# of bricks: ', bricks.size
+			log.debug '\t# of bricks:\t\t\t', bricks.size
+			log.debug '\t# of APs:\t\t\t\t', articulationPoints.size
 
-			bricks.forEach (brick) ->
-				brick.label = null
+			# Connected Components
+			bricks.forEach (brick) -> brick.label = null
+			numberOfComponents = ConComp.findConnectedComponents bricks, true
+			log.debug '\t# of components:\t\t', numberOfComponents
+			bricksToSplit = ConComp.bricksOnComponentInterfaces bricks
+			log.debug '\t# of bricks to split:\t', bricksToSplit.size
 
-			numberOfComponents = @_findConnectedComponents bricks
-			log.debug '\t# of components: ', numberOfComponents
-
-			bricksToSplit = @_bricksOnComponentInterfaces bricks
-			log.debug '\t# of bricks to split: ', bricksToSplit.size
-
-			if bricksToSplit.size is 0
+			if bricksToSplit.size is 0 and pass > 0
 				break
 			else
+				# add articulations points to bricksToSplit if there
+				articulationPoints.forEach (ap) ->
+					bricksToSplit.add ap
 				@splitBricksAndRelayoutLocally bricksToSplit, grid, false, false
 
+			# Articulation Points
+			bricks.forEach (brick) -> brick.resetArticulationPointData()
+			articulationPoints = AP.findArticulationPoints bricks
+
 		log.debug '\tfinished optimization after ', pass , 'passes'
+
+
+		# Last pass to find final number of components and articulationPoints
+		bricks = grid.getAllBricks()
+		log.debug '\t# of bricks:\t\t\t', bricks.size
+
+		bricks.forEach (brick) ->
+			brick.resetArticulationPointData()
+		articulationPoints = AP.findArticulationPoints bricks
+		log.debug '\t# of APs:\t\t\t\t', articulationPoints.size
+
+		bricks.forEach (brick) -> brick.label = null
+		numberOfComponents = ConComp.findConnectedComponents bricks, false
+		log.debug '\t# of components:\t\t', numberOfComponents
+
 		return Promise.resolve grid
-
-	# Connected components using the connected component labelling algo
-	_findConnectedComponents: (bricks) =>
-		labels = []
-		id = 0
-
-		# First pass
-		bricks.forEach (brick) ->
-			conBricks = brick.connectedBricks()
-			conLabels = new Set()
-
-			conBricks.forEach (conBrick) ->
-				conLabels.add conBrick.label if conBrick.label?
-
-			if conLabels.size > 0
-				smallestLabel = DataHelper.smallestElement conLabels
-				# Assign label to this brick
-				brick.label = labels[smallestLabel]
-				for i in [0..labels.length]
-					if conLabels.has labels[i]
-						labels[i] = labels[smallestLabel]
-
-			else # No neighbor has a label
-				brick.label = id
-				labels[id] = id
-
-				id++
-
-		# Second pass - applying labels
-		bricks.forEach (brick) ->
-			brick.label = labels[brick.label]
-
-		# Count number of components
-		finalLabels = new Set()
-		for label in labels
-			finalLabels.add label
-		numberOfComponents = finalLabels.size
-
-		return numberOfComponents
-
-	_bricksOnComponentInterfaces: (bricks) =>
-		bricksOnInterfaces = new Set()
-
-		bricks.forEach (brick) ->
-			neighborsXY = brick.getNeighborsXY()
-			neighborsXY.forEach (neighbor) ->
-				if neighbor.label != brick.label
-					bricksOnInterfaces.add neighbor
-					bricksOnInterfaces.add brick
-
-		return bricksOnInterfaces
-
 
 	###
 	# Split up all supplied bricks into single bricks and relayout locally. This

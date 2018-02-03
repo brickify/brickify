@@ -55,7 +55,20 @@ class Brick
 		for voxel in arrayOfVoxels
 			voxel.brick = @
 			@voxels.add voxel
+		# for connected components labelling algo
 		@label = null
+		# for articulation point algo
+		@resetArticulationPointData()
+
+	resetArticulationPointData: =>
+		@visited = false
+		@low = null
+		@parent = null
+		@discoveryTime = 0
+		# Count of children in DFS Tree
+		@children = 0
+		@isArticulationPoint = false
+		@isSignificantAP = false
 
 	# Enumerates over each voxel that belongs to this brick
 	forEachVoxel: (callback) =>

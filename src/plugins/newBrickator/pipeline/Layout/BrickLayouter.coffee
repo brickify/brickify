@@ -63,12 +63,12 @@ class BrickLayouter extends Layouter
 		return mergeableNeighbors
 
 	_findMergeableNeighborsInDirection: (brick, dir, widthFn, lengthFn) =>
+		if widthFn(brick.getSize()) > 2 and lengthFn(brick.getSize()) >= 2
+			return null
+
 		voxels = brick.voxels
 		mergeVoxels = new Set()
 		mergeBricks = new Set()
-
-		if widthFn(brick.getSize()) > 2 and lengthFn(brick.getSize()) >= 2
-			return null
 
 		# Find neighbor voxels, noMerge if any is empty
 		voxelIter = voxels.values()
